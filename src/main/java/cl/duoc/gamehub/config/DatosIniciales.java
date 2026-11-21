@@ -2,10 +2,13 @@ package cl.duoc.gamehub.config;
 
 import cl.duoc.gamehub.model.Usuario;
 import cl.duoc.gamehub.repository.UsuarioRepository;
+import cl.duoc.gamehub.model.Producto;
+import cl.duoc.gamehub.repository.ProductoRepositorio;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import java.util.List;
 
 @Configuration
 public class DatosIniciales {
