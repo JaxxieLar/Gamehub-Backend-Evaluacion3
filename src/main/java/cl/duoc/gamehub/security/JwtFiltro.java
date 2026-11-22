@@ -17,26 +17,46 @@ import java.util.List;
 
 @Component
 public class JwtFiltro extends OncePerRequestFilter {
-    private final JwtServicio jwt;
 
-    public JwtFiltro(JwtServicio jwt) {
-        this.jwt = jwt;
+    private final JwtServicio jwtServicio;
+
+    public JwtFiltro(JwtServicio jwtServicio) {
+        this.jwtServicio = jwtServicio;
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain cadena)
-            throws ServletException, IOException {
-        String header = req.getHeader("Authorization");
-        if (header != null && header.startsWith("Bearer ")) {
-            try {
-                Claims datos = jwt.validar(header.substring(7));
-                var rol = new SimpleGrantedAuthority("ROLE_" + datos.get("rol", String.class));
-                var usuario = new UsernamePasswordAuthenticationToken(datos.getSubject(), null, List.of(rol));
-                SecurityContextHolder.getContext().setAuthentication(usuario);
-            } catch (JwtException e) {
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain) throws ServletException, IOException {
 
+        String header = request.getHeader("Authorization");
+
+        if (header != null && header.startsWith("Bearer ")) {
+            String token = header.substring(7);
+            try {
+                Claims claims = jwtServicio.validar(token);
+                String correo = claims.getSubject();
+                String rol = claims.get("rol", String.class);
+
+                if (correo != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    String autoridad = (rol != null && rol.startsWith("ROLE_"))
+                            ? rol
+                            : "ROLE_" + (rol != null ? rol : "USER");
+
+                    UsernamePasswordAuthenticationToken auth =
+                            new UsernamePasswordAuthenticationToken(
+                                    correo,
+                                    null,
+                                    List.of(new SimpleGrantedAuthority(autoridad))
+                            );
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                }
+            } catch (JwtException ignored) {
+                SecurityContextHolder.clearContext();
             }
         }
-        cadena.doFilter(req, res);
+
+        filterChain.doFilter(request, response);
     }
 }
